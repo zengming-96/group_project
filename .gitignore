@@ -1,0 +1,46 @@
+# ============================================
+# 全局 .gitignore
+# ============================================
+
+# ---------- 敏感信息 ----------
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+*.p12
+*.pfx
+application-local.yml
+application-dev.yml
+
+# ---------- IDE / 编辑器 ----------
+.idea/
+.vscode/
+*.iml
+*.swp
+*.swo
+*~
+
+# ---------- 操作系统 ----------
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ---------- 构建产物 ----------
+target/
+build/
+dist/
+node_modules/
+*.class
+*.jar
+*.war
+
+# ---------- 日志 ----------
+logs/
+*.log
+
+# ---------- 临时文件 ----------
+tmp/
+temp/
+*.tmp
+*.bak

@@ -1,0 +1,344 @@
+{
+  "info": {
+    "name": "行测批改平台 API",
+    "_postman_id": "a5fd7c7a-1387-4fd9-8c89-95fe6a545f22",
+    "description": "根据前端接口契约生成的 Postman Collection，支持后端联调与 Mock 测试。",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "description": "用户登录接口"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('状态码非 5xx', function () {",
+                  "  pm.expect(pm.response.code).to.be.below(500);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Forgot Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/forgot-password",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "forgot-password"
+              ]
+            },
+            "description": "忘记密码接口"
+          }
+        },
+        {
+          "name": "Register Student",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"{{fullName}}\",\n  \"email\": \"{{email}}\",\n  \"role\": \"student\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "register"
+              ]
+            },
+            "description": "学生注册接口"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Paper",
+      "item": [
+        {
+          "name": "Analyze Paper Upload",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "paper",
+                  "type": "file",
+                  "src": "{{paperFilePath}}"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/papers/analyze",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "papers",
+                "analyze"
+              ]
+            },
+            "description": "上传试卷并获取分析结果"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('返回 JSON', function () {",
+                  "  pm.response.to.be.json;",
+                  "});",
+                  "pm.test('存在 questions 字段', function () {",
+                  "  var data = pm.response.json();",
+                  "  pm.expect(data).to.have.property('questions');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Profile & Reports",
+      "item": [
+        {
+          "name": "Get Profile",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users/profile",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "profile"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Learning Report (Legacy)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/reports/learning",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "reports",
+                "learning"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Learning Insights",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/reports/learning-insights?range={{range}}&type={{questionType}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "reports",
+                "learning-insights"
+              ],
+              "query": [
+                {
+                  "key": "range",
+                  "value": "{{range}}"
+                },
+                {
+                  "key": "type",
+                  "value": "{{questionType}}"
+                }
+              ]
+            },
+            "description": "学习洞察图表接口，type 可留空"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('存在 trend30d 字段', function () {",
+                  "  var data = pm.response.json();",
+                  "  pm.expect(data).to.have.property('trend30d');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "AI Guidance",
+      "item": [
+        {
+          "name": "AI Guidance Round 1",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"paperId\": \"{{paperId}}\",\n  \"questionId\": \"{{questionId}}\",\n  \"questionNumber\": {{questionNumber}},\n  \"userAttempt\": \"我先用了链式法则，但是符号处理不确定\",\n  \"history\": [\n    { \"role\": \"user\", \"content\": \"我先用了链式法则，但是符号处理不确定\" }\n  ],\n  \"context\": {\n    \"explanation\": \"第二步求导时符号处理错误\",\n    \"knowledgePoint\": \"复合函数求导中的链式法则与符号一致性\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/ai/guidance",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ai",
+                "guidance"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('包含 sessionId 和 message', function () {",
+                  "  var data = pm.response.json();",
+                  "  pm.expect(data).to.have.property('sessionId');",
+                  "  pm.expect(data).to.have.property('message');",
+                  "  pm.environment.set('sessionId', data.sessionId);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "AI Guidance Round 2",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"paperId\": \"{{paperId}}\",\n  \"questionId\": \"{{questionId}}\",\n  \"questionNumber\": {{questionNumber}},\n  \"userAttempt\": \"下一步我应该先写外层导数\",\n  \"sessionId\": \"{{sessionId}}\",\n  \"history\": [\n    { \"role\": \"user\", \"content\": \"我先用了链式法则，但是符号处理不确定\" },\n    { \"role\": \"assistant\", \"content\": \"请先写出下一步关键式子\" },\n    { \"role\": \"user\", \"content\": \"下一步我应该先写外层导数\" }\n  ],\n  \"context\": {\n    \"explanation\": \"第二步求导时符号处理错误\",\n    \"knowledgePoint\": \"复合函数求导中的链式法则与符号一致性\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/ai/guidance",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ai",
+                "guidance"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080/api"
+    }
+  ]
+}

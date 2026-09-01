@@ -1,0 +1,209 @@
+{
+  "info": {
+    "name": "Exam Grading API",
+    "description": "本地默认 baseUrl: http://localhost:8080/api\n\n1. 先执行「注册」或「登录」；Tests 会自动把 token 写入集合变量 {{token}}。\n2. GET /users/me 返回 learningStats（学习统计，已合并原 /users/me/stats）。\n3. 再执行「上传 PDF」：需开启 STORAGE_ENABLED 且配置 Supabase S3，否则返回 STORAGE_DISABLED。\n4. 上传字段名必须为 file（form-data）。",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080/api" },
+    { "key": "token", "value": "" },
+    { "key": "testEmail", "value": "demo@example.com" },
+    { "key": "testPassword", "value": "password123" },
+    { "key": "testName", "value": "演示用户" },
+    { "key": "examId", "value": "1" }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  var j = pm.response.json();",
+                  "  if (j.token) { pm.collectionVariables.set('token', j.token); }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"{{testName}}\",\n  \"email\": \"{{testEmail}}\",\n  \"password\": \"{{testPassword}}\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/register",
+            "description": "201 返回 id, email, name, token, expiresIn；Tests 会保存 token。"
+          }
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  var j = pm.response.json();",
+                  "  if (j.token) { pm.collectionVariables.set('token', j.token); }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{testEmail}}\",\n  \"password\": \"{{testPassword}}\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/login",
+            "description": "200 返回 token, expiresIn；Tests 会保存 token。"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Users",
+      "item": [
+        {
+          "name": "Get profile (GET /users/me)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/users/me",
+            "description": "用户名、邮箱、年龄、daysSinceCreated；learningStats 含 byQuestionType、currentMonthByDay、currentMonth、monthlyTrendLast12（原 /me/stats 已合并）。"
+          }
+        },
+        {
+          "name": "Update profile (PATCH /users/me)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+            },
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"新昵称\",\n  \"email\": \"{{testEmail}}\",\n  \"age\": 20\n}"
+            },
+            "url": "{{baseUrl}}/users/me",
+            "description": "必须用 PATCH，不能用 POST。至少改一项：name / email / age。改邮箱时响应会带新 token。"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Exams",
+      "item": [
+        {
+          "name": "Upload PDF",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "",
+                  "description": "选择本地 .pdf 文件；字段名必须是 file"
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/exams/upload-pdf?includeExtractedText=false",
+            "description": "multipart/form-data，字段 file。查询参数 includeExtractedText=true 时响应附带 extractedText（PDF 抽取纯文本）与 extractedTextTotalChars，便于调试；生产慎用。\n成功 200：gradingMode + detail（与 GET /exams/{id}/detail 相同结构）。需对象存储已启用。"
+          }
+        },
+        {
+          "name": "Test: extract PDF text only",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "",
+                  "description": "本地 .pdf；字段名 file"
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/exams/test/extract-text",
+            "description": "仅测试 PDF 文本抽取：200 返回 JSON { text, charCount }。不写存储、不调 AI、不写库；无需开启 S3。"
+          }
+        },
+        {
+          "name": "Exam history (GET /exams/history)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/exams/history",
+            "description": "仅需 token；返回当前用户所有试卷记录与 fileName（PDF 名）等。"
+          }
+        },
+        {
+          "name": "Exam grading detail (GET /exams/{id}/detail)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/exams/{{examId}}/detail",
+            "description": "单次批改详情：pdfPath、题目列表等。集合变量 examId 改为历史记录里的 examId。"
+          }
+        },
+        {
+          "name": "Similar practice (GET .../similar-practice)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/exams/{{examId}}/questions/1/similar-practice",
+            "description": "举一反三：将 URL 中题号 1 改为 detail 里的 questionNo。GET 无 Body，参数在路径。200 返回 sourceQuestion + similarQuestions（5 道）；每次请求会调大模型。需配置 DASHSCOPE_API_KEY。"
+          }
+        }
+      ]
+    }
+  ]
+}

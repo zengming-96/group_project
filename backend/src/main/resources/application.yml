@@ -1,0 +1,76 @@
+server:
+  port: 8080
+  servlet:
+    context-path: /api
+
+# 若 Supabase 域名无法解析（UnknownHost），可用本地内存库启动：
+# mvn spring-boot:run -Dspring-boot.run.profiles=local
+spring:
+  application:
+    name: exam-grading-api
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 55MB
+  datasource:
+    # Supabase：由 JDBC 连接串拆成 url + username + password（勿把含真实密码的 yml 推到公开仓库）
+    # 原串中的 query 参数 user/password 已移到下方独立字段；直连必须带 sslmode=require
+    url: jdbc:postgresql://db.wzhfmfoigvczkxkbkdvk.supabase.co:5432/postgres?sslmode=require
+    username: postgres
+    password: ${SUPABASE_DB_PASSWORD:}
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+      connection-timeout: 30000
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+app:
+  storage:
+    # 设为 true 并配置下方 Supabase S3 后，POST /api/exams/upload-pdf 才会真正写 Storage
+    enabled: true
+    max-file-bytes: 52428800
+    supabase:
+      # 控制台 Project Settings → Storage → S3 connection 中的 endpoint
+      endpoint: ${SUPABASE_STORAGE_S3_ENDPOINT:https://wzhfmfoigvczkxkbkdvk.supabase.co/storage/v1/s3}
+      region: ${SUPABASE_STORAGE_REGION:ap-northeast-2}
+      access-key: ${SUPABASE_STORAGE_ACCESS_KEY:}
+      secret-key: ${SUPABASE_STORAGE_SECRET_KEY:}
+      bucket: ${SUPABASE_STORAGE_BUCKET:pdfs}
+      # 桶为 public 时填写，用于生成 file_url（无尾斜杠）；须与控制台 Project URL 的 project-ref 一致
+      # 正确示例：https://<project-ref>.supabase.co/storage/v1/object/public（勿多字符，否则链接 404）
+      public-object-base-url: ${SUPABASE_STORAGE_PUBLIC_BASE_URL:https://wzhfmfoigvczkxkbkdvk.supabase.co/storage/v1/object/public}
+  ai:
+    # ---------- 通义千问（阿里百炼，OpenAI 兼容 HTTP；实现上仍用 LangChain4j 的客户端连百炼，不是 OpenAI 官方）----------
+    # 必填（本段 qwen）：api-key、base-url、model-name —— 缺 api-key 时整卷走 MOCK_AI
+    # 可选（本段 qwen）：timeout-seconds
+    # 可选（ai 下）：max-plain-text-chars、grading-mode-label
+    qwen:
+      api-key: ${DASHSCOPE_API_KEY:}
+      base-url: ${DASHSCOPE_BASE_URL:https://dashscope.aliyuncs.com/compatible-mode/v1}
+      model-name: ${QWEN_MODEL:qwen-max}
+      timeout-seconds: ${QWEN_TIMEOUT_SECONDS:180}
+    max-plain-text-chars: 80000
+    grading-mode-label: LANGCHAIN4J
+    # 上传 ?includeExtractedText=true 时响应内 extractedText 最大长度（字符）
+    debug-max-extracted-chars: 120000
+  pdf:
+    # PDFBox 只读「文字层」；扫描件需 OCR。安装 Tesseract 后，将 tessdata 目录设为 TESSERACT_DATA_PATH 或下方路径
+    ocr-enabled: true
+    ocr-dpi: 200
+    ocr-language: chi_sim+eng
+    tesseract-data-path: ${TESSERACT_DATA_PATH:}
+    ocr-min-char-score: 80
+    ocr-min-char-score-per-page: 15
+  jwt:
+    # HS256 要求密钥至少 32 字节；过短会在签发 JWT 时报错并返回 INTERNAL_ERROR
+    # 生产环境请用环境变量 JWT_SECRET（或 Base64 编码的 32+ 字节随机串）
+    # 默认明文密钥（≥32 字节）；若 JWT_SECRET 为 Base64，会先尝试解码
+    secret: ${JWT_SECRET:}
+    expiration-ms: ${JWT_EXPIRATION_MS:7200000}
+
+logging:
+  level:
+    org.springframework.security: INFO
+
